@@ -63,7 +63,14 @@ bash <(curl -s "https://raw.githubusercontent.com/liquidprjkt/liquid_kernel_buil
 
 ## 📜 License
 
-This project is licensed under the GNU GPL v3. See [LICENSE](https://www.gnu.org/licenses/gpl-3.0.html) for details.
+<p align="left">
+  <img width="30%" src="https://github.com/liquidprjkt/.github/blob/main/banner/liquid-logotype-darkmode.svg#gh-dark-mode-only"/>
+  <img width="30%" src="https://github.com/liquidprjkt/.github/blob/main/banner/liquid-logotype-lightmode.svg#gh-light-mode-only"/>
+</p>
+
+Copyright @ 2025-2026 - The Liquid Authors
+
+This project is licensed under the [GNU GPL v3](/LICENSE)
 
 ---
 
