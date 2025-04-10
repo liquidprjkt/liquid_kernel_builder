@@ -156,6 +156,11 @@ for arg in "$@"; do
     
         "build")
             if [[ "${!#}" == "build" ]]; then
+                if [[ ${ARCH} == "arm64" ]]; then
+                    CROSS_COMPILE=aarch64-linux-gnu-
+                elif [[ ${ARCH} == "arm" ]]; then
+                    CROSS_COMPILE=arm-linux-gnueabi-
+                fi
                 # Initial config
                 make "${FLAGS[@]}" "${DEFCONFIG}"
                 
