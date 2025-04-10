@@ -25,7 +25,6 @@ STOCK='\e[1;0m'
 BUILDER_VERSION=0.0.1
 WORK_DIRECTORY=$(pwd)
 DEFCONFIG=liquid-super_defconfig
-ARCH=x86
 KBUILD_BUILD_HOST=kernelcompiler
 KBUILD_BUILD_USER=liquid
 KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
@@ -78,6 +77,11 @@ Options:
 "
 }
 
+# Check if we're in a likely Linux kernel source directory
+if ! [[ -f "Makefile" && -d "arch" && -d "scripts" && -f "Kconfig" ]]; then
+    printn -e "This does not appear to be the Linux kernel source directory."
+fi
+
 # Main script logic
 if [[ $# -eq 0 ]]; then
     tty -s
@@ -129,18 +133,25 @@ for arg in "$@"; do
             fi
         ;;    
         "--defconfig="*)
+            # Auto-detect ARCH from defconfig path if ARCH is not specified
             DEFCONFIG="${arg#--defconfig=}"
 
-            # Auto-detect ARCH from defconfig path
             DEFCONFIG_PATH=$(find "${WORK_DIRECTORY}/arch/" -path "*/configs/${DEFCONFIG}" | head -n 1)
 
-            if [[ -n "${DEFCONFIG_PATH}" ]]; then
-                ARCH=$(echo "$DEFCONFIG_PATH" | awk -F'/' '{print $(NF-2)}')
-                printn -i "Detected ARCH=$ARCH from defconfig"
-                printn -i "Using $DEFCONFIG as default config"
+            # If a specific ARCH is passed as an argument use it
+            if [[ -n "$ARCH" ]]; then
+                printn -i "Using manually specified ARCH=$ARCH"
             else
-                printn -e "Config file not found: ${DEFCONFIG}"
+                if [[ -n "${DEFCONFIG_PATH}" ]]; then
+                    ARCH=$(echo "$DEFCONFIG_PATH" | awk -F'/' '{print $(NF-2)}')
+                    printn -i "Detected ARCH=$ARCH from defconfig"
+                else
+                    printn -e "Config file not found: ${DEFCONFIG}"
+                fi
             fi
+
+            # Continue with the rest of the logic (e.g., using ARCH)
+            printn -i "Using ARCH=$ARCH for further configuration"
         ;;
     
         "build")
