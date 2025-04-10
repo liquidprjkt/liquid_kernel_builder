@@ -144,7 +144,7 @@ for arg in "$@"; do
             else
                 if [[ -n "${DEFCONFIG_PATH}" ]]; then
                     ARCH=$(echo "$DEFCONFIG_PATH" | awk -F'/' '{print $(NF-2)}')
-                    printn -i "Detected ARCH=$ARCH from defconfig"
+                    printn -i "Detected ARCH=$ARCH from defconfig ($DEFCONFIG)"
                 else
                     printn -e "Config file not found: ${DEFCONFIG}"
                 fi
