@@ -130,12 +130,19 @@ for arg in "$@"; do
         ;;    
         "--defconfig="*)
             DEFCONFIG="${arg#--defconfig=}"
-            if [[ -f "${WORK_DIRECTORY}/arch/$ARCH/configs/${DEFCONFIG}" ]]; then
+
+            # Auto-detect ARCH from defconfig path
+            DEFCONFIG_PATH=$(find "${WORK_DIRECTORY}/arch/" -path "*/configs/${DEFCONFIG}" | head -n 1)
+
+            if [[ -n "${DEFCONFIG_PATH}" ]]; then
+                ARCH=$(echo "$DEFCONFIG_PATH" | awk -F'/' '{print $(NF-2)}')
+                printn -i "Detected ARCH=$ARCH from defconfig"
                 printn -i "Using $DEFCONFIG as default config"
             else
                 printn -e "Config file not found: ${DEFCONFIG}"
             fi
         ;;
+    
         "build")
             if [[ "${!#}" == "build" ]]; then
                 # Initial config
