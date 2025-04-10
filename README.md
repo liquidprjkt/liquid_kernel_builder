@@ -53,6 +53,12 @@ A lightweight and flexible Bash script to build Linux kernels with support for c
 ./kbuilder clean --custom_tc=~/toolchains/clang-r450784d build
 ```
 
+kbuilder can also be ran without actually downloading the script:
+
+```bash
+bash <(curl -s "https://raw.githubusercontent.com/liquidprjkt/liquid_kernel_builder/refs/heads/main/kbuilder.sh") build
+```
+
 ---
 
 ## 📜 License
