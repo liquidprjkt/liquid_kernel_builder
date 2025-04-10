@@ -166,9 +166,9 @@ for arg in "$@"; do
                 
                 # Full build
                 if command -v ccache &> /dev/null; then
-                    PATH="/usr/lib/ccache/bin:${PATH}" make "${DEFCONFIG}" all -j$(nproc --all) "${FLAGS[@]}"
+                    PATH="/usr/lib/ccache/bin:${PATH}" make "${DEFCONFIG}" all -j$(nproc --all --ignore=2) "${FLAGS[@]}"
                 else
-                    make "${DEFCONFIG}" all -j$(nproc --all) "${FLAGS[@]}"
+                    make "${DEFCONFIG}" all -j$(nproc --all --ignore=2) "${FLAGS[@]}"
                 fi
             else
                 printn -e "build should be the last argument!"
