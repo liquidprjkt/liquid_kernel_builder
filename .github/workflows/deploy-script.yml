@@ -19,7 +19,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git clone https://x-access-token:${TOKEN}@github.com/liquidprjkt/liquidprjkt.github.io temp-site
+          git clone https://x-access-token:${{ secrets.TOKEN }}@github.com/liquidprjkt/liquidprjkt.github.io temp-site
           cp kbuilder.sh temp-site/kbuilder
 
           cd temp-site
