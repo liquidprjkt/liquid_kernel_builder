@@ -12,15 +12,17 @@ jobs:
       - name: Checkout source repo
         uses: actions/checkout@v3
 
-      - name: Push script to user site repo
+      - name: Clone user site with authentication
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git clone https://github.com/liquidprjkt/liquidprjkt.github.io temp-site
+          git clone https://x-access-token:${TOKEN}@github.com/liquidprjkt/liquidprjkt.github.io temp-site
           cp kbuilder.sh temp-site/kbuilder
 
           cd temp-site
           git add kbuilder
-          git commit -m "[CI] update kbuilder"
+          git commit -m "[CI] update kbuilder" || echo "No changes to commit"
           git push origin main
