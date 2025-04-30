@@ -1,0 +1,26 @@
+name: Deploy kbuilder to user site
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v3
+
+      - name: Push script to user site repo
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git clone https://github.com/liquidprjkt/liquidprjkt.github.io temp-site
+          cp kbuilder.sh temp-site/kbuilder
+
+          cd temp-site
+          git add kbuilder
+          git commit -m "[CI] update kbuilder"
+          git push origin main
