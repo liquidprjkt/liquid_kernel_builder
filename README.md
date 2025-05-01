@@ -64,8 +64,8 @@ bash <(curl -s "https://liquidprjkt.github.io/kbuilder") build
 ## 📜 License
 
 <p align="left">
-  <img width="30%" src="https://github.com/liquidprjkt/.github/blob/main/banner/liquid-logotype-darkmode.svg#gh-dark-mode-only"/>
-  <img width="30%" src="https://github.com/liquidprjkt/.github/blob/main/banner/liquid-logotype-lightmode.svg#gh-light-mode-only"/>
+  <img width="35%" src="https://github.com/liquidprjkt/.github/blob/main/banner/liquid-logotype-darkmode.svg#gh-dark-mode-only"/>
+  <img width="35%" src="https://github.com/liquidprjkt/.github/blob/main/banner/liquid-logotype-lightmode.svg#gh-light-mode-only"/>
 </p>
 
 Copyright @ 2025-2026 - The Liquid Authors
