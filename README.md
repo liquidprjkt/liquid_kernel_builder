@@ -41,7 +41,7 @@ A lightweight and flexible Bash script to build Linux kernels with support for c
 | Option               | Description                                          |
 |----------------------|------------------------------------------------------|
 | `--custom_tc=PATH`   | Use custom LLVM toolchain from specified directory   |
-| `--defconfig=NAME`   | Use a specific defconfig file (e.g., `my_defconfig`) |
+| `--defconfig=NAME`   | Use a specific defconfig file (e.g. `my_defconfig`) |
 | `-v`, `--version`    | Show version and license                            |
 | `-h`, `--help`       | Show help message                                   |
 
