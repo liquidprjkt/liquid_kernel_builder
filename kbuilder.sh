@@ -161,9 +161,7 @@ for arg in "$@"; do
                 elif [[ ${ARCH} == "arm" ]]; then
                     CROSS_COMPILE=arm-linux-gnueabi-
                 fi
-                # Initial config
-                make "${FLAGS[@]}" "${DEFCONFIG}"
-                
+
                 # Full build
                 if command -v ccache &> /dev/null; then
                     PATH="/usr/lib/ccache/bin:${PATH}" make "${DEFCONFIG}" all -j$(nproc --all --ignore=2) "${FLAGS[@]}"
