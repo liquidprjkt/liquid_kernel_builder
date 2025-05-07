@@ -164,7 +164,7 @@ for arg in "$@"; do
 
                 # Full build
                 if command -v ccache &> /dev/null; then
-                    PATH="/usr/lib/ccache/bin:${PATH}" make "${DEFCONFIG}" all -j$(nproc --all --ignore=2) "${FLAGS[@]}"
+                    PATH="/usr/lib/ccache/bin:${PATH}" make CC="ccache ${CC}" "${DEFCONFIG}" all -j$(nproc --all --ignore=2) "${FLAGS[@]}"
                 else
                     make "${DEFCONFIG}" all -j$(nproc --all --ignore=2) "${FLAGS[@]}"
                 fi
