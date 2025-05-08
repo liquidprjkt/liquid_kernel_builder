@@ -164,6 +164,9 @@ for arg in "$@"; do
 
                 # Full build
                 if command -v ccache &> /dev/null; then
+                    # Let clang preprocess the code
+                    export CCACHE_CPP2=yes
+
                     # Wrap toolchain with ccache in array listing
                     for i in "${!FLAGS[@]}"; do
                         case "${FLAGS[$i]}" in
