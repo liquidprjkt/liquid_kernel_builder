@@ -164,7 +164,15 @@ for arg in "$@"; do
 
                 # Full build
                 if command -v ccache &> /dev/null; then
-                    PATH="/usr/lib/ccache/bin:${PATH}" make CC="ccache ${CC}" "${DEFCONFIG}" all -j$(nproc --all --ignore=2) "${FLAGS[@]}"
+                    # Wrap toolchain with ccache in array listing
+                    for i in "${!FLAGS[@]}"; do
+                        case "${FLAGS[$i]}" in
+                            CC=clang) FLAGS[$i]="CC=ccache clang" ;;
+                            HOSTCC=clang) FLAGS[$i]="HOSTCC=ccache clang" ;;
+                            HOSTCXX=clang++) FLAGS[$i]="HOSTCXX=ccache clang++" ;;
+                        esac
+                    done
+                    PATH="/usr/lib/ccache/bin:${PATH}" make "${DEFCONFIG}" all -j$(nproc --all --ignore=2) "${FLAGS[@]}"
                 else
                     make "${DEFCONFIG}" all -j$(nproc --all --ignore=2) "${FLAGS[@]}"
                 fi
