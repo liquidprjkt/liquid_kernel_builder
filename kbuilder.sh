@@ -167,6 +167,10 @@ for arg in "$@"; do
                     # Let clang preprocess the code
                     export CCACHE_CPP2=yes
 
+                    # Set ccache options
+                    ccache --max-size=10G
+                    ccache --set-config compression=true
+
                     # Wrap toolchain with ccache in array listing
                     for i in "${!FLAGS[@]}"; do
                         case "${FLAGS[$i]}" in
