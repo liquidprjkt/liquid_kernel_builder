@@ -29,6 +29,12 @@ KBUILD_BUILD_HOST=kernelcompiler
 KBUILD_BUILD_USER=liquid
 KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
 
+# Builder flags
+CUSTOM_TC=""
+DEFCONFIG_OVERRIDE=""
+BUILD_AFTER_CLEAN=false
+CLEAN_FLAG=false
+
 # Default toolchain flags
 FLAGS=(
     LLVM=1
@@ -77,10 +83,13 @@ Options:
 "
 }
 
-# Check if we're in a likely Linux kernel source directory
-if ! [[ -f "Makefile" && -d "arch" && -d "scripts" && -f "Kconfig" ]]; then
-    printn -e "This does not appear to be the Linux kernel source directory."
-fi
+check_kernel_source()
+{
+    # Check if we're in a likely Linux kernel source directory
+    if ! [[ -f "Makefile" && -d "arch" && -d "scripts" && -f "Kconfig" ]]; then
+        printn -e "This does not appear to be the Linux kernel source directory."
+    fi
+}
 
 # Main script logic
 if [[ $# -eq 0 ]]; then
@@ -91,102 +100,14 @@ fi
 
 for arg in "$@"; do
     case "${arg}" in
+        "build") BUILD_FLAG=true ;;
+        "--custom_tc="*) CUSTOM_TC="${arg#--custom_tc=}" ;;
+        "--defconfig="*) DEFCONFIG_OVERRIDE="${arg#--defconfig=}" ;;
         "clean")
-            if [[ "$*" == "clean" ]]; then
-                make mrproper
-            else
-                printn -e "clean should be the first argument!"
-            fi
-        ;;  
-        "--custom_tc="*)
-            customtc_path="${arg#--custom_tc=}"
-            if [[ "${customtc_path}" == *bin* ]]; then
-                FLAGS=(
-                    LLVM=1
-                    LLVM_IAS=1
-                    CC=${customtc_path}/clang
-                    AR=${customtc_path}/llvm-ar
-                    LD=${customtc_path}/ld.lld
-                    NM=${customtc_path}/llvm-nm
-                    STRIP=${customtc_path}/llvm-strip
-                    OBJCOPY=${customtc_path}/llvm-objcopy
-                    OBJDUMP=${customtc_path}/llvm-objdump
-                    OBJSIZE=${customtc_path}/llvm-size
-                    HOSTCC=${customtc_path}/clang
-                    HOSTCXX=${customtc_path}/clang++
-                    HOSTAR=${customtc_path}/llvm-ar
-                    HOSTLD=${customtc_path}/ld.lld
-                )
-
-                # Verify toolchain components
-                for flag_availability in "${FLAGS[@]}"; do
-                    var_name="${flag_availability%%=*}"
-                    var_value="${flag_availability#*=}"
-                    if [[ -f "$var_value" ]]; then
-                        printn -i "$var_name: $var_value exists."
-                    else
-                        printn -e "$var_name: $var_value does not exist or is not a valid file."
-                    fi
-                done
-            else
-                printn -i "Using default toolchain"
-            fi
-        ;;    
-        "--defconfig="*)
-            # Auto-detect ARCH from defconfig path if ARCH is not specified
-            DEFCONFIG="${arg#--defconfig=}"
-
-            DEFCONFIG_PATH=$(find "${WORK_DIRECTORY}/arch/" -path "*/configs/${DEFCONFIG}" | head -n 1)
-
-            # If a specific ARCH is passed as an argument use it
-            if [[ -n "$ARCH" ]]; then
-                printn -i "Using manually specified ARCH=$ARCH"
-            else
-                if [[ -n "${DEFCONFIG_PATH}" ]]; then
-                    ARCH=$(echo "$DEFCONFIG_PATH" | awk -F'/' '{print $(NF-2)}')
-                    printn -i "Detected ARCH=$ARCH from defconfig ($DEFCONFIG)"
-                else
-                    printn -e "Config file not found: ${DEFCONFIG}"
-                fi
-            fi
-
-            # Continue with the rest of the logic (e.g., using ARCH)
-            printn -i "Using ARCH=$ARCH for further configuration"
+            CLEAN_FLAG=true
+            BUILD_AFTER_CLEAN=true
+            printn -i "Cleaning build directory..."
         ;;
-    
-        "build")
-            if [[ "${!#}" == "build" ]]; then
-                if [[ ${ARCH} == "arm64" ]]; then
-                    CROSS_COMPILE=aarch64-linux-gnu-
-                elif [[ ${ARCH} == "arm" ]]; then
-                    CROSS_COMPILE=arm-linux-gnueabi-
-                fi
-
-                # Full build
-                if command -v ccache &> /dev/null; then
-                    # Let clang preprocess the code
-                    export CCACHE_CPP2=yes
-
-                    # Set ccache options
-                    ccache --max-size=10G
-                    ccache --set-config compression=true
-
-                    # Wrap toolchain with ccache in array listing
-                    for i in "${!FLAGS[@]}"; do
-                        case "${FLAGS[$i]}" in
-                            CC=clang) FLAGS[$i]="CC=ccache clang" ;;
-                            HOSTCC=clang) FLAGS[$i]="HOSTCC=ccache clang" ;;
-                            HOSTCXX=clang++) FLAGS[$i]="HOSTCXX=ccache clang++" ;;
-                        esac
-                    done
-                    PATH="/usr/lib/ccache/bin:${PATH}" make "${DEFCONFIG}" all -j$(nproc --all --ignore=2) "${FLAGS[@]}"
-                else
-                    make "${DEFCONFIG}" all -j$(nproc --all --ignore=2) "${FLAGS[@]}"
-                fi
-            else
-                printn -e "build should be the last argument!"
-            fi
-        ;;  
         "-v" | "--version")
             echo -e "Kernel Builder v${BUILDER_VERSION}
 Copyright (C) 2025-2026 UsiFX <xprjkts@gmail.com>
@@ -200,3 +121,93 @@ There is NO WARRANTY, to the extent permitted by law."
             printn -e "Unknown option: $arg, try '--help'." ;;
     esac
 done
+
+# Handle clean first, then build if requested
+if [[ $CLEAN_FLAG == true ]]; then
+    make mrproper
+fi
+
+# Handle build if requested
+if [[ $BUILD_FLAG == true ]]; then
+    check_kernel_source
+
+    printn -i "Starting kernel build process..."
+
+    # Apply custom toolchain if provided
+    if [[ -n "$CUSTOM_TC" ]]; then
+        printn -i "Using custom toolchain from $CUSTOM_TC"
+
+        # Update toolchain variables with custom toolchain path
+        FLAGS=(
+            LLVM=1
+            LLVM_IAS=1
+            CC=${CUSTOM_TC}/clang
+            AR=${CUSTOM_TC}/llvm-ar
+            LD=${CUSTOM_TC}/ld.lld
+            NM=${CUSTOM_TC}/llvm-nm
+            STRIP=${CUSTOM_TC}/llvm-strip
+            OBJCOPY=${CUSTOM_TC}/llvm-objcopy
+            OBJDUMP=${CUSTOM_TC}/llvm-objdump
+            OBJSIZE=${CUSTOM_TC}/llvm-size
+            HOSTCC=${CUSTOM_TC}/clang
+            HOSTCXX=${CUSTOM_TC}/clang++
+            HOSTAR=${CUSTOM_TC}/llvm-ar
+            HOSTLD=${CUSTOM_TC}/ld.lld
+        )
+
+        # Verify toolchain components
+        for flag_availability in "${FLAGS[@]}"; do
+            var_name="${flag_availability%%=*}"
+            var_value="${flag_availability#*=}"
+            if [[ -f "$var_value" ]]; then
+                printn -i "$var_name: $var_value exists."
+            else
+                printn -e "$var_name: $var_value does not exist or is not a valid file."
+            fi
+        done
+    else
+        printn -i "Using default toolchain"
+    fi
+
+    # Apply defconfig override if provided
+    if [[ -n "$DEFCONFIG_OVERRIDE" ]]; then
+        DEFCONFIG="$DEFCONFIG_OVERRIDE"
+    fi
+
+    # Auto-detect ARCH from defconfig path if ARCH is not specified
+    DEFCONFIG_PATH=$(find "${WORK_DIRECTORY}/arch/" -path "*/configs/${DEFCONFIG}" | head -n 1)
+    if [[ -n "$ARCH" ]]; then
+        printn -i "Using manually specified ARCH=$ARCH"
+    else
+        if [[ -n "${DEFCONFIG_PATH}" ]]; then
+            ARCH=$(echo "$DEFCONFIG_PATH" | awk -F'/' '{print $(NF-2)}')
+            printn -i "Detected ARCH=$ARCH from defconfig ($DEFCONFIG)"
+        else
+            printn -e "Config file not found: ${DEFCONFIG}"
+        fi
+    fi
+
+    printn -i "Using ARCH=$ARCH for further configuration"
+
+    # Apply defconfig override if provided
+    if [[ -n "$DEFCONFIG_OVERRIDE" ]]; then
+        DEFCONFIG="$DEFCONFIG_OVERRIDE"
+    fi
+
+    # Build kernel
+    if command -v ccache &> /dev/null; then
+        export CCACHE_CPP2=yes
+        ccache --max-size=10G
+        ccache --set-config compression=true
+        for i in "${!FLAGS[@]}"; do
+            case "${FLAGS[$i]}" in
+                CC=clang) FLAGS[$i]="CC=ccache clang" ;;
+                HOSTCC=clang) FLAGS[$i]="HOSTCC=ccache clang" ;;
+                HOSTCXX=clang++) FLAGS[$i]="HOSTCXX=ccache clang++" ;;
+            esac
+        done
+        PATH="/usr/lib/ccache/bin:${PATH}" make "${DEFCONFIG}" all -j$(nproc --all --ignore=2) "${FLAGS[@]}"
+    else
+        make "${DEFCONFIG}" all -j$(nproc --all --ignore=2) "${FLAGS[@]}"
+    fi
+fi
