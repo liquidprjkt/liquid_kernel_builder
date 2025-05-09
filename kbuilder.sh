@@ -28,6 +28,7 @@ DEFCONFIG=liquid-super_defconfig
 KBUILD_BUILD_HOST=kernelcompiler
 KBUILD_BUILD_USER=liquid
 KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
+ARCH="${ARCH:-}"  # Use ARCH from env if set, or empty
 
 # Builder flags
 CUSTOM_TC=""
@@ -172,26 +173,25 @@ if [[ $BUILD_FLAG == true ]]; then
     # Apply defconfig override if provided
     if [[ -n "$DEFCONFIG_OVERRIDE" ]]; then
         DEFCONFIG="$DEFCONFIG_OVERRIDE"
-    fi
 
-    # Auto-detect ARCH from defconfig path if ARCH is not specified
-    DEFCONFIG_PATH=$(find "${WORK_DIRECTORY}/arch/" -path "*/configs/${DEFCONFIG}" 2>/dev/null | head -n 1)
-    if [[ -n "$ARCH" ]]; then
-        printn -i "Using manually specified ARCH=$ARCH"
-    else
-        if [[ -n "${DEFCONFIG_PATH}" ]]; then
-            ARCH=$(echo "$DEFCONFIG_PATH" | awk -F'/' '{print $(NF-2)}')
-            printn -i "Detected ARCH=$ARCH from defconfig ($DEFCONFIG)"
+        # Try to detect ARCH from path if not manually set
+        if [[ -z "$ARCH" ]]; then
+            DEFCONFIG_PATH=$(find "${WORK_DIRECTORY}/arch/" -path "*/configs/${DEFCONFIG}" 2>/dev/null | head -n 1)
+            if [[ -n "$DEFCONFIG_PATH" ]]; then
+                ARCH=$(echo "$DEFCONFIG_PATH" | awk -F'/' '{print $(NF-2)}')
+                printn -i "Using ARCH=$ARCH of ${DEFCONFIG}."
+            else
+                printn -w "Could not detect ARCH from ${DEFCONFIG}. Using default: x86"
+                ARCH="x86"
+            fi
         else
-            printn -e "Config file not found: ${DEFCONFIG}"
+            printn -i "Using manually specified ARCH=$ARCH"
         fi
-    fi
-
-    printn -i "Using ARCH=$ARCH for further configuration"
-
-    # Apply defconfig override if provided
-    if [[ -n "$DEFCONFIG_OVERRIDE" ]]; then
-        DEFCONFIG="$DEFCONFIG_OVERRIDE"
+    else
+        if [[ -z "$ARCH" ]]; then
+            ARCH="x86"  # default fallback
+            printn -i "No defconfig or ARCH specified. Defaulting to ARCH=$ARCH"
+        fi
     fi
 
     # Build kernel
