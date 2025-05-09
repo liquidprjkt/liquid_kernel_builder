@@ -175,7 +175,7 @@ if [[ $BUILD_FLAG == true ]]; then
     fi
 
     # Auto-detect ARCH from defconfig path if ARCH is not specified
-    DEFCONFIG_PATH=$(find "${WORK_DIRECTORY}/arch/" -path "*/configs/${DEFCONFIG}" | head -n 1)
+    DEFCONFIG_PATH=$(find "${WORK_DIRECTORY}/arch/" -path "*/configs/${DEFCONFIG}" 2>/dev/null | head -n 1)
     if [[ -n "$ARCH" ]]; then
         printn -i "Using manually specified ARCH=$ARCH"
     else
