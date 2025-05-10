@@ -13,11 +13,8 @@
 
 # Color definitions
 BLUE='\e[1;34m'
-GREEN='\e[1;32m'
-PURPLE='\e[1;35m'
 CYAN='\e[1;36m'
 RED='\e[1;31m'
-WHITE='\e[1;37m'
 YELLOW='\e[01;33m'
 STOCK='\e[1;0m'
 
@@ -25,15 +22,15 @@ STOCK='\e[1;0m'
 BUILDER_VERSION=0.0.1
 WORK_DIRECTORY=$(pwd)
 DEFCONFIG=liquid-super_defconfig
+ARCH="${ARCH:-}"  # Use ARCH from env if set, or empty
+
 KBUILD_BUILD_HOST=kernelcompiler
 KBUILD_BUILD_USER=liquid
 KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
-ARCH="${ARCH:-}"  # Use ARCH from env if set, or empty
 
 # Builder flags
 CUSTOM_TC=""
 DEFCONFIG_OVERRIDE=""
-BUILD_AFTER_CLEAN=false
 CLEAN_FLAG=false
 USE_CCACHE=true
 
@@ -55,16 +52,15 @@ FLAGS=(
     HOSTLD=ld.lld
 )
 
-# Print functions
 printn() {
     case "$1" in
-        "-n") printf "[${BLUE}*${STOCK}] $2\n" ;;
+        "-n") printf "[${BLUE}*${STOCK}] %s\n" "$2" ;;
         "-e") 
-            printf "[${RED}×${STOCK}] $2\n"
+            printf "[${RED}×${STOCK}] %s\n" "$2"
             exit 1
             ;;
-        "-w") printf "[${YELLOW}!${STOCK}] $2\n" ;;
-        "-i") printf "[${CYAN}i${STOCK}] $2\n" ;;
+        "-w") printf "[${YELLOW}!${STOCK}] %s\n" "$2" ;;
+        "-i") printf "[${CYAN}i${STOCK}] %s\n" "$2" ;;
     esac
 }
 
@@ -109,7 +105,6 @@ for arg in "$@"; do
         "--defconfig="*) DEFCONFIG_OVERRIDE="${arg#--defconfig=}" ;;
         "clean")
             CLEAN_FLAG=true
-            BUILD_AFTER_CLEAN=true
             printn -i "Cleaning build directory..."
         ;;
         "-v" | "--version")
@@ -136,6 +131,7 @@ if [[ $BUILD_FLAG == true ]]; then
     check_kernel_source
 
     printn -i "Starting kernel build process..."
+    export KBUILD_BUILD_HOST KBUILD_BUILD_TIMESTAMP KBUILD_BUILD_USER
 
     # Apply custom toolchain if provided
     if [[ -n "$CUSTOM_TC" ]]; then
@@ -143,20 +139,20 @@ if [[ $BUILD_FLAG == true ]]; then
 
         # Update toolchain variables with custom toolchain path
         FLAGS=(
-            LLVM=1
-            LLVM_IAS=1
-            CC=${CUSTOM_TC}/clang
-            AR=${CUSTOM_TC}/llvm-ar
-            LD=${CUSTOM_TC}/ld.lld
-            NM=${CUSTOM_TC}/llvm-nm
-            STRIP=${CUSTOM_TC}/llvm-strip
-            OBJCOPY=${CUSTOM_TC}/llvm-objcopy
-            OBJDUMP=${CUSTOM_TC}/llvm-objdump
-            OBJSIZE=${CUSTOM_TC}/llvm-size
-            HOSTCC=${CUSTOM_TC}/clang
-            HOSTCXX=${CUSTOM_TC}/clang++
-            HOSTAR=${CUSTOM_TC}/llvm-ar
-            HOSTLD=${CUSTOM_TC}/ld.lld
+            "LLVM=1"
+            "LLVM_IAS=1"
+            "CC=${CUSTOM_TC}/clang"
+            "AR=${CUSTOM_TC}/llvm-ar"
+            "LD=${CUSTOM_TC}/ld.lld"
+            "NM=${CUSTOM_TC}/llvm-nm"
+            "STRIP=${CUSTOM_TC}/llvm-strip"
+            "OBJCOPY=${CUSTOM_TC}/llvm-objcopy"
+            "OBJDUMP=${CUSTOM_TC}/llvm-objdump"
+            "OBJSIZE=${CUSTOM_TC}/llvm-size"
+            "HOSTCC=${CUSTOM_TC}/clang"
+            "HOSTCXX=${CUSTOM_TC}/clang++"
+            "HOSTAR=${CUSTOM_TC}/llvm-ar"
+            "HOSTLD=${CUSTOM_TC}/ld.lld"
         )
 
         # Verify toolchain components
@@ -202,15 +198,17 @@ if [[ $BUILD_FLAG == true ]]; then
         export CCACHE_CPP2=yes
         ccache --max-size=10G
         ccache --set-config compression=true
-        for i in "${!FLAGS[@]}"; do
-            case "${FLAGS[$i]}" in
-                CC=clang) FLAGS[$i]="CC=ccache clang" ;;
-                HOSTCC=clang) FLAGS[$i]="HOSTCC=ccache clang" ;;
-                HOSTCXX=clang++) FLAGS[$i]="HOSTCXX=ccache clang++" ;;
+        for flag in "${!FLAGS[@]}"; do
+            case "$flag" in
+                CC=clang)           new_flags+="CC=ccache clang" ;;
+                HOSTCC=clang)       new_flags+="HOSTCC=ccache clang" ;;
+                HOSTCXX=clang++)    new_flags+="HOSTCXX=ccache clang++" ;;
+                *)                  new_flags+=("$flags");;
             esac
         done
-        PATH="/usr/lib/ccache/bin:${PATH}" make "${DEFCONFIG}" all -j$(nproc --all --ignore=2) "${FLAGS[@]}"
+        FLAGS=("${new_flags[@]}")
+        PATH="/usr/lib/ccache/bin:${PATH}" make "${DEFCONFIG}" all -j"$(nproc --all --ignore=2)" "${FLAGS[@]}"
     else
-        make "${DEFCONFIG}" all -j$(nproc --all --ignore=2) "${FLAGS[@]}"
+        make "${DEFCONFIG}" all -j"$(nproc --all --ignore=2)" "${FLAGS[@]}"
     fi
 fi
