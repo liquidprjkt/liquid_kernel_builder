@@ -198,15 +198,23 @@ if [[ $BUILD_FLAG == true ]]; then
         export CCACHE_CPP2=yes
         ccache --max-size=10G
         ccache --set-config compression=true
+
+        # Initialize an empty array to store the updated flags
+        new_flags=()
+
+        # Loop through the FLAGS array by index
         for flag in "${!FLAGS[@]}"; do
-            case "$flag" in
-                CC=clang)           new_flags+="CC=ccache clang" ;;
-                HOSTCC=clang)       new_flags+="HOSTCC=ccache clang" ;;
-                HOSTCXX=clang++)    new_flags+="HOSTCXX=ccache clang++" ;;
-                *)                  new_flags+=("$flags");;
+            case "${FLAGS[$flag]}" in
+                CC=clang)           new_flags+=("CC=ccache clang") ;;
+                HOSTCC=clang)       new_flags+=("HOSTCC=ccache clang") ;;
+                HOSTCXX=clang++)    new_flags+=("HOSTCXX=ccache clang++") ;;
+                *)                  new_flags+=("${FLAGS[$flag]}") ;;
             esac
         done
+
+        # Now, update the FLAGS array with the new flags
         FLAGS=("${new_flags[@]}")
+        
         PATH="/usr/lib/ccache/bin:${PATH}" make "${DEFCONFIG}" all -j"$(nproc --all --ignore=2)" "${FLAGS[@]}"
     else
         make "${DEFCONFIG}" all -j"$(nproc --all --ignore=2)" "${FLAGS[@]}"
