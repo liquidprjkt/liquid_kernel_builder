@@ -35,6 +35,7 @@ CUSTOM_TC=""
 DEFCONFIG_OVERRIDE=""
 BUILD_AFTER_CLEAN=false
 CLEAN_FLAG=false
+USE_CCACHE=true
 
 # Default toolchain flags
 FLAGS=(
@@ -77,6 +78,7 @@ Commands:
  build                  Start kernel build process
 
 Options:
+ --no-ccache            Disable ccache validity and build without it
  --custom_tc=DIRECTORY  Use custom toolchain from specified directory
  --defconfig=FILENAME   Override default config file
  -v, --version          Show version information
@@ -102,6 +104,7 @@ fi
 for arg in "$@"; do
     case "${arg}" in
         "build") BUILD_FLAG=true ;;
+        "--no-ccache") USE_CCACHE=false; printn -i "ccache explicitly disabled." ;;
         "--custom_tc="*) CUSTOM_TC="${arg#--custom_tc=}" ;;
         "--defconfig="*) DEFCONFIG_OVERRIDE="${arg#--defconfig=}" ;;
         "clean")
@@ -195,7 +198,7 @@ if [[ $BUILD_FLAG == true ]]; then
     fi
 
     # Build kernel
-    if command -v ccache &> /dev/null; then
+    if [[ "$USE_CCACHE" == true ]] && command -v ccache &>/dev/null; then
         export CCACHE_CPP2=yes
         ccache --max-size=10G
         ccache --set-config compression=true
