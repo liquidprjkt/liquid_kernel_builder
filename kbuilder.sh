@@ -18,6 +18,9 @@ RED='\e[1;31m'
 YELLOW='\e[01;33m'
 STOCK='\e[1;0m'
 
+# Enable debug early if env var is set
+[[ $KBUILDER_DEBUG == 1 ]] && set -x
+
 # Build configuration
 BUILDER_VERSION=0.0.1
 WORK_DIRECTORY=$(pwd)
@@ -214,7 +217,7 @@ if [[ $BUILD_FLAG == true ]]; then
 
         # Now, update the FLAGS array with the new flags
         FLAGS=("${new_flags[@]}")
-        
+
         PATH="/usr/lib/ccache/bin:${PATH}" make "${DEFCONFIG}" all -j"$(nproc --all --ignore=2)" "${FLAGS[@]}"
     else
         make "${DEFCONFIG}" all -j"$(nproc --all --ignore=2)" "${FLAGS[@]}"
